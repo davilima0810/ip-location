@@ -1,95 +1,103 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client"
+import React, { useContext, useState } from "react";
+import { Input, Button, Modal, Table, message } from "antd";
+import axios from "axios";
+import styles from './page.module.css'; 
+import { IPInfoContext } from 'ip-info-react';
 
-export default function Home() {
+const columns = [
+  {
+    title: 'Campo',
+    dataIndex: 'field',
+    key: 'field',
+  },
+  {
+    title: 'Valor',
+    dataIndex: 'value',
+    key: 'value',
+  },
+];
+
+interface TableInfo {
+  field: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value: any;
+}
+
+const IpLocationPage = () => {
+  const [ip, setIp] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<TableInfo[]>();
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  
+  const userInfo = useContext(IPInfoContext);
+
+  console.log(userInfo)
+
+  const fetchIpLocation = async () => {
+    if (!ip) {
+      message.error("Por favor, insira um endereço IP.");
+      return;
+    }
+
+    
+
+    setLoading(true);
+    try {
+      const response = await axios.get(`https://ipapi.co/${ip}/json/`);
+      const locationData = [
+        { field: "IP", value: response.data.ip },
+        { field: "Cidade", value: response.data.city },
+        { field: "Região", value: response.data.region },
+        { field: "País", value: response.data.country_name },
+        { field: "Latitude", value: response.data.latitude },
+        { field: "Longitude", value: response.data.longitude },
+        { field: "Provedor", value: response.data.org },
+      ];
+      setData(locationData);
+      setLoading(false);
+      setIsModalVisible(true);
+    } catch (error) {
+      message.error("Falha ao buscar as informações de localização.");
+      console.error(error);
+      setLoading(false);
+    }
+  };
+
+  const handleModalClose = () => {
+    setIsModalVisible(false);
+  };
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
+    <div className={styles.container}>
+      <div className={styles.searchBox}>
+        <h1 className={styles.title}>Busca de Localização por IP</h1> {/* Apply the local class */}
+        <Input
+          placeholder="Insira o endereço IP"
+          value={ip}
+          onChange={(e) => setIp(e.target.value)}
+          style={{ width: 300, marginRight: 10 }}
         />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+        <Button type="primary" onClick={fetchIpLocation} loading={loading}>
+          Buscar
+        </Button>
+      </div>
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      <Modal
+        title="Informações de Localização"
+        visible={isModalVisible}
+        onCancel={handleModalClose}
+        footer={null}
+      >
+        <Table
+          columns={columns}
+          dataSource={data}
+          pagination={false}
+          rowKey="field"
+        />
+      </Modal>
     </div>
   );
-}
+};
+
+export default IpLocationPage;
